@@ -28,141 +28,131 @@ import ballerina/system;
 public function isResourceSecured(http:ListenerAuthConfig? resourceLevelAuthAnn, http:ListenerAuthConfig?
     serviceLevelAuthAnn) returns boolean {
     boolean isSecured = true;
-    match resourceLevelAuthAnn.authentication {
-        http:Authentication authn => {
+    var authn =  resourceLevelAuthAnn.authentication;
+        if(authn is http:Authentication)  {
             isSecured = authn.enabled;
         }
-        () => {
+        else {
             // if not found at resource level, check in the service level
-            match serviceLevelAuthAnn.authentication {
-                http:Authentication authn => {
-                    isSecured = authn.enabled;
-                }
-                () => {
-                    // by default if no value given, we think auth is enabled in gateway
-                    isSecured = true;
-                }
+            var serviceAuthn =  serviceLevelAuthAnn.authentication;
+            if(serviceAuthn is http:Authentication) {
+                isSecured = serviceAuthn.enabled;
+            }
+            else {
+                // by default if no value given, we think auth is enabled in gateway
+                isSecured = true;
             }
         }
-    }
     return isSecured;
 }
 
-@Description { value: "Tries to retrieve the annotation value for authentication hierarchically - first from the resource
-level
-and then from the service level, if its not there in the resource level" }
-@Param { value: "annotationPackage: annotation package name" }
-@Param { value: "annotationName: annotation name" }
-@Param { value: "annData: array of annotationData instances" }
-@Return { value: "ListenerAuthConfig: ListenerAuthConfig instance if its defined, else nil" }
+# "Tries to retrieve the annotation value for authentication hierarchically - first from the resource level and then from the service level, if its not there in the resource level" }
+# + annotationPackage - annotation package name
+# + annotationName - annotation name
+# + annData - array of annotationData instances
+# + return - { value: "ListenerAuthConfig: ListenerAuthConfig instance if its defined, else nil" }
+
+// authAnn = null
 public function getAuthAnnotation(string annotationPackage, string annotationName, reflect:annotationData[] annData)
                     returns (http:ListenerAuthConfig?) {
-    if (lengthof annData == 0) {
+    if (annData.length() == 0) {
         return ();
     }
-    reflect:annotationData|() authAnn;
-    foreach ann in annData {
+    reflect:annotationData|() authAnn = null;
+    foreach var ann in annData {
         if (ann.name == annotationName && ann.pkgName == annotationPackage) {
             authAnn = ann;
             break;
         }
     }
-    match authAnn {
-        reflect:annotationData annData1 => {
-            if (annotationName == RESOURCE_ANN_NAME) {
-                http:HttpResourceConfig resourceConfig = check <http:HttpResourceConfig>annData1.value;
-                return resourceConfig.authConfig;
-            } else if (annotationName == SERVICE_ANN_NAME) {
-                http:HttpServiceConfig serviceConfig = check <http:HttpServiceConfig>annData1.value;
-                return serviceConfig.authConfig;
-            } else {
-                return ();
-            }
-        }
-        () => {
+    if(authAnn is reflect:annotationData)  {
+        if (annotationName == RESOURCE_ANN_NAME) {
+            http:HttpResourceConfig resourceConfig = check <http:HttpResourceConfig>authAnn.value;
+            return resourceConfig.authConfig;
+        } else if (annotationName == SERVICE_ANN_NAME) {
+            http:HttpServiceConfig serviceConfig = check <http:HttpServiceConfig>authAnn.value;
+            return serviceConfig.authConfig;
+        } else {
             return ();
         }
+    } else {
+        return ();
     }
 }
 
 
-@Description { value: "Retrieve the annotation related to resources" }
-@Return { value: "HttpResourceConfig: HttpResourceConfig instance if its defined, else nil" }
+# Retrieve the annotation related to resources
+# + return - { value: "HttpResourceConfig: HttpResourceConfig instance if its defined, else nil" }
 public function getResourceConfigAnnotation(reflect:annotationData[] annData)
                     returns (http:HttpResourceConfig) {
-    if (lengthof annData == 0) {
+    if (annData.length() == 0) {
         return {};
     }
-    reflect:annotationData|() authAnn;
-    foreach ann in annData {
+    reflect:annotationData|() authAnn = null;
+    foreach var ann in annData {
         if (ann.name == RESOURCE_ANN_NAME && ann.pkgName == ANN_PACKAGE) {
             authAnn = ann;
             break;
         }
     }
-    match authAnn {
-        reflect:annotationData annData1 => {
-            http:HttpResourceConfig resourceConfig = check <http:HttpResourceConfig>annData1.value;
-            return resourceConfig;
-        }
-        () => {
-            return {};
-        }
+    if(authAnn is reflect:annotationData) {
+        http:HttpResourceConfig resourceConfig = check <http:HttpResourceConfig>authAnn.value;
+        return resourceConfig;
+    }
+    else {
+        return {};
     }
 }
 
-@Description { value: "Retrieve the annotation related to resource level Tier" }
-@Return { value: "TierConfiguration: TierConfiguration instance if its defined, else nil" }
+# Retrieve the annotation related to resource level Tier
+# +return - { value: "TierConfiguration: TierConfiguration instance if its defined, else nil" }
+// tierAnn null
 public function getResourceLevelTier(reflect:annotationData[] annData)
                     returns (TierConfiguration) {
-    if (lengthof annData == 0) {
+    if (annData.length == 0) {
         return {};
     }
-    reflect:annotationData|() tierAnn;
-    foreach ann in annData {
+    reflect:annotationData|() tierAnn = null;
+    foreach var ann in annData {
         if (ann.name == RESOURCE_TIER_ANN_NAME && ann.pkgName == RESOURCE_TIER_ANN_PACKAGE) {
             tierAnn = ann;
             break;
         }
     }
-    match tierAnn {
-        reflect:annotationData annData1 => {
-            TierConfiguration resourceLevelTier = check <TierConfiguration>annData1.value;
-            return resourceLevelTier;
-        }
-        () => {
-            return {};
-        }
+    if(tierAnn is reflect:annotationData) {
+        TierConfiguration resourceLevelTier = check <TierConfiguration>tierAnn.value;
+        return resourceLevelTier;
+    }
+    else {
+        return {};
     }
 }
 
-@Description { value: "Retrieve the annotation related to service" }
-@Return { value: "HttpServiceConfig: HttpResourceConfig instance if its defined, else nil" }
+# Retrieve the annotation related to service
+# +return - { value: "HttpServiceConfig: HttpResourceConfig instance if its defined, else nil" }
 public function getServiceConfigAnnotation(reflect:annotationData[] annData)
                     returns (http:HttpServiceConfig) {
-    if (lengthof annData == 0) {
+    if (annData.length() == 0) {
         return {};
     }
-    reflect:annotationData|() authAnn;
-    foreach ann in annData {
+    reflect:annotationData|() authAnn = null;
+    foreach var ann in annData {
         if (ann.name == SERVICE_ANN_NAME && ann.pkgName == ANN_PACKAGE) {
             authAnn = ann;
             break;
         }
     }
-    match authAnn {
-        reflect:annotationData annData1 => {
-            http:HttpServiceConfig serviceConfig = check <http:HttpServiceConfig>annData1.value;
-            return serviceConfig;
-        }
-        () => {
-            return {};
-        }
+    if(authAnn is reflect:annotationData) {
+        http:HttpServiceConfig serviceConfig = check <http:HttpServiceConfig>authAnn.value;
+        return serviceConfig;
+    }
+    else {
+        return {};
     }
 }
 
-@Description { value: "Retrieve the key validation request dto from filter context" }
-@Return { value: "api key validation request dto" }
+# Retrieve the key validation request dto from filter context
+# +return - { value: "api key validation request dto" }
 public function getKeyValidationRequestObject() returns APIRequestMetaDataDto {
     APIRequestMetaDataDto apiKeyValidationRequest = {};
     typedesc serviceType = check <typedesc>runtime:getInvocationContext().attributes[SERVICE_TYPE_ATTR];
@@ -196,30 +186,27 @@ public function getKeyValidationRequestObject() returns APIRequestMetaDataDto {
 
 
 public function getAPIDetailsFromServiceAnnotation(reflect:annotationData[] annData) returns APIConfiguration {
-    if (lengthof annData == 0) {
+    if (annData.length() == 0) {
         return {};
     }
-    reflect:annotationData|() apiAnn;
-    foreach ann in annData {
+    reflect:annotationData|() apiAnn = null;
+    foreach var ann in annData {
         if (ann.name == API_ANN_NAME && ann.pkgName == GATEWAY_ANN_PACKAGE) {
             apiAnn = ann;
             break;
         }
     }
-    match apiAnn {
-        reflect:annotationData annData1 => {
-            APIConfiguration apiConfig = check <APIConfiguration>annData1.value;
-            return apiConfig;
-        }
-        () => {
-            return {};
-        }
+    if(apiAnn is reflect:annotationData) {
+        APIConfiguration apiConfig = check <APIConfiguration>apiAnn.value;
+        return apiConfig;
+    } else {
+        return {};
     }
 }
 
 public function getTenantFromBasePath(string basePath) returns string {
     string[] splittedArray = basePath.split("/");
-    return splittedArray[lengthof splittedArray - 1];
+    return splittedArray[splittedArray.length() - 1];
 }
 
 
@@ -247,7 +234,7 @@ public function getContext(http:FilterContext context) returns (string) {
 
 }
 
-public function getClientIp(http:Request request, http:Listener listener) returns (string) {
+public function getClientIp(http:Request request, http:Caller caller) returns (string) {
     string clientIp;
     if (request.hasHeader(X_FORWARD_FOR_HEADER)) {
         clientIp = request.getHeader(X_FORWARD_FOR_HEADER);
@@ -256,7 +243,7 @@ public function getClientIp(http:Request request, http:Listener listener) return
             clientIp = clientIp.substring(0, idx);
         }
     } else {
-        clientIp = listener.remote.host;
+        clientIp = caller.remoteDetails.host;
     }
     return clientIp;
 }
@@ -264,7 +251,7 @@ public function getClientIp(http:Request request, http:Listener listener) return
 public function extractAccessToken(http:Request req, string authHeaderName) returns (string|error) {
     string authHeader = req.getHeader(authHeaderName);
     string[] authHeaderComponents = authHeader.split(" ");
-    if (lengthof authHeaderComponents != 2){
+    if (authHeaderComponents.length() != 2){
         return handleError("Incorrect bearer authentication header format");
     }
     return authHeaderComponents[1];
@@ -278,7 +265,7 @@ public function getTenantDomain(http:FilterContext context) returns (string) {
     // todo: need to implement to get tenantDomain
     string apiContext = getContext(context);
     string[] splittedContext = apiContext.split("/");
-    if (lengthof splittedContext > 3){
+    if (splittedContext.length() > 3){
         // this check if basepath have /t/domain in
         return splittedContext[2];
     } else {
@@ -306,7 +293,7 @@ public function getConfigFloatValue(string instanceId, string property, float de
     return config:getAsFloat(instanceId + "." + property, default = defaultValue);
 }
 
-public function getConfigMapValue(string property) returns map {
+public function getConfigMapValue(string property) returns map<any> {
     return config:getAsMap(property);
 }
 
@@ -334,9 +321,8 @@ public function setErrorMessageToFilterContext(http:FilterContext context, int e
     context.attributes[ERROR_DESCRIPTION] = getFailureMessageDetailDescription(errorCode, errorMessage);
 }
 
-@Description { value: "Default error response sender with json error response" }
-public function sendErrorResponse(http:Listener listener, http:Request request, http:FilterContext context) {
-    endpoint http:Listener caller = listener;
+# Default error response sender with json error response
+public function sendErrorResponse(http:Caller caller, http:Request request, http:FilterContext context) {
     int statusCode = check <int>context.attributes[HTTP_STATUS_CODE];
     string errorDescription = <string>context.attributes[ERROR_DESCRIPTION];
     string errorMesssage = <string>context.attributes[ERROR_MESSAGE];
@@ -351,9 +337,8 @@ public function sendErrorResponse(http:Listener listener, http:Request request, 
     } };
     response.setJsonPayload(payload);
     var value = caller->respond(response);
-    match value {
-        error err => log:printError("Error occurred while sending the error response", err = err);
-        () => {}
+    if(value is error) {
+    log:printError("Error occurred while sending the error response", err = value);
     }
 }
 
@@ -381,32 +366,31 @@ public function rotateFile(string fileName) returns string|error {
     string zipName = fileName + "." + rotatingTimeStamp + "." + uuid + ZIP_EXTENSION;
     internal:Path zipLocation = new(fileLocation + zipName);
     internal:Path fileToZip = new(fileLocation + fileName);
-    match internal:compress(fileToZip, zipLocation) {
-        error compressError => {
-            printFullError(KEY_UTILS, compressError);
-            return compressError;
-        }
-        () => {
-            printInfo(KEY_UTILS, "File compressed successfully");
-            match fileToZip.delete() {
-                () => {
-                    printInfo(KEY_UTILS, "Existing file deleted successfully");
-                }
-                error err => {
-                    printFullError(KEY_UTILS, err);
-                }
+    var compressResult = internal:compress(fileToZip, zipLocation);
+    if(compressResult is error) {
+        printFullError(KEY_UTILS, compressError);
+        return compressError;
+    } else {
+        printInfo(KEY_UTILS, "File compressed successfully");
+        var deleteResult = fileToZip.delete();
+            if(deleteResult is ()) {
+                printInfo(KEY_UTILS, "Existing file deleted successfully");
             }
-            return zipName;
-        }
+            else {
+                printFullError(KEY_UTILS, err);
+            }
+        return zipName;
     }
 }
 
-@Description { value: "Retrieve external configurations defined against a key" }
+# Retrieve external configurations defined against a key
+# +return - config
 public function retrieveConfig(string key, string default) returns string {
     return config:getAsString(key, default = default);
 }
 
-@Description { value: "mask all letters with given text except last 4 charactors." }
+# mask all letters with given text except last 4 charactors
+# +return - masked
 public function mask(string text) returns string {
     if (text.length() > 4) {
         string last = text.substring(text.length() - 4, text.length());
@@ -417,7 +401,8 @@ public function mask(string text) returns string {
     }
 }
 
-@Description { value: "Returns the current message ID (uuid)" }
+# get the message id
+# +return - the current message ID (uuid)
 public function getMessageId() returns string {
     string messageId = <string>runtime:getInvocationContext().attributes[MESSAGE_ID];
     if (messageId == null) {
@@ -427,27 +412,27 @@ public function getMessageId() returns string {
     }
 }
 
-@Description { value: "Add a error log with provided key (class) and message ID" }
+# Add a error log with provided key (class) and message ID
 public function printError(string key, string message) {
     log:printError(io:sprintf("[%s] [%s] %s", key, getMessageId(), message));
 }
 
-@Description { value: "Add a debug log with provided key (class) and message ID" }
+# Add a debug log with provided key (class) and message ID
 public function printDebug(string key, string message) {
     log:printDebug(io:sprintf("[%s] [%s] %s", key, getMessageId(), message));
 }
 
-@Description { value: "Add a trace log with provided key (class) and message ID" }
+# Add a trace log with provided key (class) and message ID
 public function printTrace(string key, string message) {
     log:printTrace(io:sprintf("[%s] [%s] %s", key, getMessageId(), message));
 }
 
-@Description { value: "Add a info log with provided key (class) and message ID" }
+# Add a info log with provided key (class) and message ID
 public function printInfo(string key, string message) {
     log:printInfo(io:sprintf("[%s] [%s] %s", key, getMessageId(), message));
 }
 
-@Description { value: "Add a full error log with provided key (class) and message ID" }
+# Add a full error log with provided key (class) and message ID
 public function printFullError(string key, error message) {
     log:printError(io:sprintf("[%s] [%s] %s", key, getMessageId(), message.message), err = message);
 }
@@ -458,7 +443,7 @@ function setLatency(int starting, http:FilterContext context, string latencyType
     printDebug(KEY_THROTTLE_FILTER, "Throttling latency: " + (ending - starting) + "ms");
 }
 
-@Description { value: "Check MESSAGE_ID in context and set if it is not" }
+# Check MESSAGE_ID in context and set if it is not
 function checkOrSetMessageID(http:FilterContext context) {
     if (!context.attributes.hasKey(MESSAGE_ID)) {
         context.attributes[MESSAGE_ID] = system:uuid();
@@ -473,24 +458,29 @@ public function checkExpectHeaderPresent(http:Request request) {
     }
 }
 
-@Description { value: "Encode a given value to base64 format" }
+# Encode a given value to base64 format
+# +return -  encoded value
 public function encodeValueToBase64(string value) returns string {
-    string encodedValue;
+    string encodedValue = null;
     var result = value.base64Encode(charset = "utf-8");
-    match result {
-        string matchedResult => encodedValue = matchedResult;
-        error err => printError(KEY_UTILS, err.message);
+    if(result is string) {
+        encodedValue = result;
+    } else {
+        printError(KEY_UTILS, err.message);
     }
     return encodedValue;
 }
 
-@Description { value: "Decode a given base64value to base10 format" }
+# Decode a given base64value to base10 format"
+# +return - decoded value
 public function decodeValueToBase10(string value) returns string {
-    string decodedValue;
+    string decodedValue = "";
     var result = value.base64Decode(charset = "utf-8");
-    match result {
-        string matchedResult => decodedValue = untaint matchedResult;
-        error err => printError(KEY_UTILS, err.message);
+    if(result is string) {
+        decodedValue = untaint matchedResult;
+    }
+    else {
+        printError(KEY_UTILS, err.message);
     }
     return decodedValue;
 }
