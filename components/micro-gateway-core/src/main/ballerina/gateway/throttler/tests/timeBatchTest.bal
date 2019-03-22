@@ -5,7 +5,6 @@ import ballerina/test;
 import ballerina/config;
 import ballerina/runtime;
 import ballerina/time;
-//import wso2/gateway;
 
 type InputStreamDTO record {
     string throttleKey;
@@ -32,9 +31,6 @@ public function timebatchtest(){
     test:assertEquals(arrayOut[5].eventCount, 4, msg = "Test time batch failed, batch count failed");
     test:assertFalse(arrayOut[5].expiryTimeStamp == 0, msg= "expiry time stamp is not added properly");
 }
-
-
-
 
 
 function startTimeBatchTest() returns (OutputStreamDTO[]) {

@@ -4,7 +4,6 @@ import ballerina/io;
 import ballerina/test;
 import ballerina/config;
 import ballerina/runtime;
-//import wso2/gateway;
 
 type InputDTO record {
     string throttleKey;
